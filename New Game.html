@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumping Game</title>
+    <!-- Tailwind CSS for styling the UI elements -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #a0c9e6; /* Lighter background for morning theme */
+            color: #2d3748;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Set body to full viewport height */
+            margin: 0;
+            padding: 1rem; /* Reduced padding */
+            box-sizing: border-box;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem; /* Reduced gap */
+            max-width: 90vw;
+            width: 100%;
+            height: 100%; /* Take up all available vertical space */
+        }
+
+        canvas {
+            background: #a0c9e6; /* Match body background */
+            border-radius: 1rem;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2);
+            touch-action: none;
+            width: 100%;
+            flex: 1; /* Allow canvas to grow and take up remaining space */
+            max-height: 70vh; /* Prevents canvas from getting too tall on large screens */
+        }
+
+        .controls-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+
+        .game-button {
+            background: linear-gradient(145deg, #f6e05e, #d69e2e);
+            color: #2d3748;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+            box-shadow: 0 4px 15px rgba(246, 224, 94, 0.4);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .game-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(246, 224, 94, 0.6);
+        }
+
+        .game-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(246, 224, 94, 0.4);
+        }
+
+        .menu-button {
+            background: linear-gradient(145deg, #4299e1, #2b6cb0);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative; /* Needed for the dropdown menu */
+        }
+
+        .menu-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #2d3748;
+            color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 100;
+            padding: 1rem;
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 250px;
+        }
+
+        .dropdown-menu.visible {
+            display: flex;
+        }
+
+        .file-input-label {
+            display: block;
+            background: #4a5568;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+
+        .file-input-label:hover {
+            background-color: #718096;
+        }
+
+        .difficulty-button {
+            background-color: #e2e8f0;
+            color: #2d3748;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .difficulty-button.active {
+            background-color: #4299e1;
+            color: white;
+            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+        }
+
+        #message-box {
+            position: absolute;
+            background-color: rgba(26, 32, 44, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 2px solid #4299e1;
+            box-shadow: 0 0 15px rgba(66, 153, 225, 0.6);
+            text-align: center;
+            display: none;
+            z-index: 10;
+        }
+
+        #message-box h2 {
+            font-size: 2rem;
+            margin: 0;
+            color: #fff;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+        }
+
+        #message-box p {
+            margin: 1rem 0 0;
+            font-size: 1.2rem;
+            color: #e2e8f0;
+        }
+
+        .mobile-controls {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 1rem;
+        }
+        
+        .mobile-controls-button {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-controls-button:active {
+            opacity: 1;
+        }
+        
+        @media (min-width: 768px) {
+            .mobile-controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#a0c9e6] text-[#2d3748] flex-col h-screen p-4 md:p-8">
+
+    <div id="game-container" class="w-full flex flex-col items-center max-w-2xl">
+        <h1 class="text-3xl md:text-5xl font-bold text-center mb-1 text-[#4299e1] uppercase tracking-wider">Jumping Game</h1>
+        
+        <canvas id="gameCanvas" class="w-full h-full max-w-full rounded-2xl shadow-xl border-4 border-[#4299e1]"></canvas>
+
+        <div id="message-box" class="absolute inset-0 flex flex-col justify-center items-center">
+            <div class="bg-gray-900 p-8 rounded-2xl shadow-2xl text-center border-4 border-blue-500">
+                <h2 class="text-4xl text-white mb-4"></h2>
+                <p class="text-xl text-gray-300"></p>
+                <button id="restartBtnMessage" class="game-button mt-6">Play Again</button>
+            </div>
+        </div>
+
+        <!-- Consolidated Image Upload Menu -->
+        <div class="relative inline-block my-2">
+            <button id="imageMenuBtn" class="menu-button">
+                Choose Character Images
+            </button>
+            <div id="imageMenu" class="dropdown-menu">
+                <input type="file" id="char-image-upload" class="hidden" accept="image/*" data-char="main">
+                <label for="char-image-upload" class="file-input-label">Upload Main Character</label>
+
+                <input type="file" id="hr-image-upload" class="hidden" accept="image/*" data-char="HR">
+                <label for="hr-image-upload" class="file-input-label">Upload HR</label>
+
+                <input type="file" id="am-image-upload" class="hidden" accept="image/*" data-char="Associate Manager">
+                <label for="am-image-upload" class="file-input-label">Upload Associate Manager</label>
+
+                <input type="file" id="pm-image-upload" class="hidden" accept="image/*" data-char="Project Manager">
+                <label for="pm-image-upload" class="file-input-label">Upload Project Manager</label>
+
+                <input type="file" id="ceo-image-upload" class="hidden" accept="image/*" data-char="CEO">
+                <label for="ceo-image-upload" class="file-input-label">Upload CEO</label>
+            </div>
+        </div>
+        
+        <div id="difficulty-container" class="flex gap-4 mt-2">
+            <button class="difficulty-button active" data-mode="easy">Easy</button>
+            <button class="difficulty-button" data-mode="medium">Medium</button>
+            <button class="difficulty-button" data-mode="hard">Hard</button>
+        </div>
+
+        <div class="controls-container">
+            <button id="startBtn" class="game-button">Start Game</button>
+            <button id="restartBtn" class="game-button hidden">Restart Game</button>
+        </div>
+        
+        <div class="mobile-controls">
+            <div id="left-btn" class="mobile-controls-button">
+                <i class="fas fa-arrow-left"></i>
+            </div>
+            <div id="jump-btn" class="mobile-controls-button">
+                <i class="fas fa-arrow-up"></i>
+            </div>
+            <div id="right-btn" class="mobile-controls-button">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const fileInputs = document.querySelectorAll('input[type="file"]');
+
+            const startBtn = document.getElementById('startBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const messageBox = document.getElementById('message-box');
+            const messageTitle = messageBox.querySelector('h2');
+            const messageText = messageBox.querySelector('p');
+            const restartBtnMessage = document.getElementById('restartBtnMessage');
+            const difficultyButtons = document.querySelectorAll('.difficulty-button');
+
+            const imageMenuBtn = document.getElementById('imageMenuBtn');
+            const imageMenu = document.getElementById('imageMenu');
+
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const jumpBtn = document.getElementById('jump-btn');
+
+            let gameStarted = false;
+            let gameOver = false;
+            let gravity = 0.5;
+            
+            // Image objects for all characters
+            let characterImage = new Image();
+            characterImage.src = 'https://placehold.co/50x50/ff6347/fff?text=P';
+
+            let hrImage = new Image();
+            hrImage.src = 'https://i.imgur.com/8Qj829m.png';
+            let associateManagerImage = new Image();
+            associateManagerImage.src = 'https://placehold.co/40x40/3b82f6/fff?text=AM';
+            let projectManagerImage = new Image();
+            projectManagerImage.src = 'https://placehold.co/40x40/22c55e/fff?text=PM';
+            let ceoImage = new Image();
+            ceoImage.src = 'https://placehold.co/40x40/1a202c/fff?text=CEO';
+            
+            let score = 0;
+            let highScore = 0;
+            let gameSpeed = 3;
+            let boostScoreMultiplier = 1;
+            let appraisalBoostTimer = 0;
+            let promotionBoostTimer = 0;
+            let gameMode = 'medium';
+            let frameCount = 0;
+            
+            // New state for boost messages
+            let boostMessage = null;
+            let boostMessageTimer = 0;
+            const boostMessageDuration = 90; // 1.5 seconds at 60 fps
+            const boostDurationFrames = 600; // 10 seconds at 60 fps
+            
+            // New variables for Total Screen Coverage
+            let coverageGrid = [];
+            const gridWidth = 50;
+            const gridHeight = 25;
+            let totalCoveredCells = 0;
+            let cellWidth;
+            let cellHeight;
+            
+            // A helper function to create and reset the grid
+            function resetCoverageGrid() {
+                cellWidth = canvas.width / gridWidth;
+                cellHeight = canvas.height / gridHeight;
+                coverageGrid = [];
+                for (let i = 0; i < gridHeight; i++) {
+                    coverageGrid[i] = new Array(gridWidth).fill(0);
+                }
+                totalCoveredCells = 0;
+            }
+
+            const character = {
+                x: 50,
+                y: 0, // Will be set by resize handler
+                width: 50,
+                height: 50,
+                vx: 0,
+                vy: 0,
+                speed: 5,
+                jumpPower: -12,
+                jumps: 0, // New property to track jumps in the air
+                isJumping: false,
+                onGround: false,
+                isFacingRight: true
+            };
+
+            const ground = {
+                y: 0, // Will be set by resize handler
+                height: 20
+            };
+
+            const enemyImages = {
+                'HR': { image: hrImage, width: 60, height: 60 },
+                'Associate Manager': { image: associateManagerImage, width: 40, height: 40 },
+                'Project Manager': { image: projectManagerImage, width: 40, height: 40 },
+                'CEO': { image: ceoImage, width: 40, height: 40 }
+            };
+            
+            let platforms = [];
+            let enemies = [];
+            let powerups = [];
+            let particles = [];
+            let lastPlatformX = 0;
+            
+            let treePositions = [];
+
+            // New variables for the double jump feature
+            let promotionStreakCount = 0;
+            let lastPromotionTime = 0;
+            const promotionStreakWindow = 600; // 10 seconds * 60 fps
+            let doubleJumpEnabled = false;
+            let doubleJumpTimer = 0;
+            const doubleJumpDuration = 600; // 10 seconds * 60 fps
+
+            // State for the Gemini message
+            let geminiMessage = null;
+            let geminiMessageTimer = 0;
+            const geminiMessageDuration = 180; // duration in frames
+
+            // Load high score from local storage on startup
+            const storedHighScore = localStorage.getItem('highScore');
+            if (storedHighScore) {
+                highScore = parseInt(storedHighScore, 10);
+            }
+
+            async function getGeminiReview(powerupType) {
+                const prompt = powerupType === 'Appraisal'
+                    ? `Generate a single-sentence, humorous, corporate-themed appraisal message for a jumping game character who just got an 'Appraisal' power-up. Start the message with "Appraisal:".`
+                    : `Generate a single-sentence, enthusiastic, corporate promotion announcement for a jumping game character who just got a 'Promotion' power-up. Start the message with "Promotion:".`;
+
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                // Retry logic with exponential backoff
+                let retries = 0;
+                const maxRetries = 3;
+                let delay = 1000;
+
+                while (retries < maxRetries) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                console.error("Gemini API Error: Unauthorized. Please check if a valid API key is available.");
+                                geminiMessage = `API Error: Please check if a valid API key is available.`;
+                                geminiMessageTimer = geminiMessageDuration;
+                                return;
+                            }
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            geminiMessage = text;
+                            geminiMessageTimer = geminiMessageDuration;
+                        } else {
+                            console.warn("Gemini API returned an unexpected response structure.");
+                            geminiMessage = `[API Note: Failed to generate a message.]`;
+                            geminiMessageTimer = geminiMessageDuration;
+                        }
+                        return;
+                    } catch (error) {
+                        console.error("Gemini API Error:", error);
+                        retries++;
+                        if (retries < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            delay *= 2; // Exponential backoff
+                        } else {
+                            geminiMessage = `API Error: Failed to fetch ${powerupType} message.`;
+                            geminiMessageTimer = geminiMessageDuration;
+                        }
+                    }
+                }
+            }
+            
+            // Handle image uploads
+            fileInputs.forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    const charType = e.target.dataset.char;
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            switch (charType) {
+                                case 'main':
+                                    characterImage.src = event.target.result;
+                                    break;
+                                case 'HR':
+                                    hrImage.src = event.target.result;
+                                    break;
+                                case 'Associate Manager':
+                                    associateManagerImage.src = event.target.result;
+                                    break;
+                                case 'Project Manager':
+                                    projectManagerImage.src = event.target.result;
+                                    break;
+                                case 'CEO':
+                                    ceoImage.src = event.target.result;
+                                    break;
+                            }
+                            showMessage("Image Loaded", `The image for ${charType} is ready. Press 'Start Game' to begin.`);
+                            gameStarted = false;
+                            draw();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+
+            // Handle canvas resize
+            function resizeHandler() {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                
+                ground.y = canvas.height - ground.height;
+                character.y = ground.y - character.height;
+                
+                // Clear and regenerate the grid
+                resetCoverageGrid();
+
+                // Re-position existing objects if necessary
+                platforms.forEach(p => {
+                    p.y = ground.y - p.height;
+                });
+                enemies.forEach(e => {
+                    e.y = ground.y - e.height;
+                });
+                powerups.forEach(p => {
+                    p.y = ground.y - p.height - Math.random() * 150;
+                });
+                treePositions.forEach(t => {
+                    t.y = ground.y - t.size;
+                });
+            }
+
+            function generateObjects() {
+                // Generate new platforms
+                while (lastPlatformX < canvas.width + 200) {
+                    const minWidth = 80;
+                    const maxWidth = 200;
+                    const width = Math.random() * (maxWidth - minWidth) + minWidth;
+                    const minHeight = 100;
+                    const maxHeight = canvas.height * 0.7; // Scale with canvas height
+                    const height = Math.random() * (maxHeight - minHeight) + minHeight;
+                    const gap = Math.random() * 200 + 100;
+                    
+                    const newPlatform = {
+                        x: lastPlatformX + gap,
+                        y: canvas.height - height,
+                        width: width,
+                        height: height
+                    };
+
+                    platforms.push(newPlatform);
+                    lastPlatformX = newPlatform.x + newPlatform.width;
+                }
+
+                // Generate new enemies and power-ups
+                if (Math.random() < 0.008) { 
+                    const enemyTypeKeys = Object.keys(enemyImages);
+                    const randomKey = enemyTypeKeys[Math.floor(Math.random() * enemyTypeKeys.length)];
+                    const enemyInfo = enemyImages[randomKey];
+
+                    const newEnemy = {
+                        x: canvas.width,
+                        y: ground.y - enemyInfo.height,
+                        width: enemyInfo.width,
+                        height: enemyInfo.height,
+                        type: randomKey,
+                        animOffset: Math.random() * Math.PI * 2
+                    };
+                    enemies.push(newEnemy);
+                }
+
+                if (Math.random() < 0.01) {
+                    const powerupType = Math.random() < 0.5 ? 'Appraisal' : 'Promotion';
+                    const newPowerup = {
+                        x: canvas.width + Math.random() * 100,
+                        y: ground.y - 60 - Math.random() * 150,
+                        width: 25,
+                        height: 25,
+                        type: powerupType,
+                        color: powerupType === 'Appraisal' ? '#f6e05e' : '#4299e1',
+                        animOffset: Math.random() * Math.PI * 2
+                    };
+                    powerups.push(newPowerup);
+                }
+
+                // Generate new trees
+                if (treePositions.length < 5) {
+                    if (treePositions.length === 0 || treePositions[treePositions.length-1].x < canvas.width * 0.8) {
+                        treePositions.push({
+                            x: canvas.width + Math.random() * 200,
+                            size: Math.random() * 30 + 20
+                        });
+                    }
+                }
+            }
+
+            function updateGameMode(mode) {
+                gameMode = mode;
+                difficultyButtons.forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+                switch(mode) {
+                    case 'easy':
+                        gameSpeed = 2;
+                        break;
+                    case 'medium':
+                        gameSpeed = 3;
+                        break;
+                    case 'hard':
+                        gameSpeed = 5;
+                        break;
+                }
+            }
+
+            function drawCharacter() {
+                ctx.save();
+                if (!character.isFacingRight) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(characterImage, -character.x - character.width, character.y, character.width, character.height);
+                } else {
+                    ctx.drawImage(characterImage, character.x, character.y, character.width, character.height);
+                }
+                ctx.restore();
+            }
+
+            function drawGround() {
+                ctx.fillStyle = '#4299e1';
+                ctx.fillRect(0, ground.y, canvas.width, ground.height);
+            }
+
+            function drawPlatforms() {
+                platforms.forEach(platform => {
+                    ctx.fillStyle = '#2d3748';
+                    ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+
+                    const windowSize = 8;
+                    const windowGap = 10;
+                    const windowColor = '#a0aec0';
+                    ctx.fillStyle = windowColor;
+                    for (let x = platform.x + windowGap; x < platform.x + platform.width - windowGap; x += windowSize + windowGap) {
+                        for (let y = platform.y + windowGap; y < platform.y + platform.height - windowGap; y += windowSize + windowGap) {
+                            ctx.fillRect(x, y, windowSize, windowSize);
+                        }
+                    }
+                });
+            }
+
+            function drawTrees() {
+                treePositions.forEach(tree => {
+                    ctx.fillStyle = '#4a2c10'; // Trunk color
+                    ctx.fillRect(tree.x, ground.y - tree.size, tree.size / 4, tree.size);
+                    ctx.fillStyle = '#228B22'; // Leaves color
+                    ctx.beginPath();
+                    ctx.arc(tree.x + tree.size / 8, ground.y - tree.size * 1.2, tree.size / 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            function drawEnemies() {
+                enemies.forEach(enemy => {
+                    // Add subtle up/down animation
+                    const offsetY = Math.sin(frameCount * 0.05 + enemy.animOffset) * 5;
+                    
+                    const enemyImage = enemyImages[enemy.type].image;
+                    if (enemyImage && enemyImage.complete && enemyImage.naturalWidth !== 0) {
+                        ctx.drawImage(enemyImage, enemy.x, enemy.y + offsetY, enemy.width, enemy.height);
+                    } else {
+                        // Fallback to a colored square with text if image is not loaded
+                        ctx.fillStyle = '#1a202c';
+                        ctx.fillRect(enemy.x, enemy.y + offsetY, enemy.width, enemy.height);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '14px "Press Start 2P"';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        let text = enemy.type === 'Associate Manager' ? 'AM' : enemy.type === 'Project Manager' ? 'PM' : enemy.type;
+                        ctx.fillText(text, enemy.x + enemy.width / 2, enemy.y + enemy.height / 2 + offsetY);
+                    }
+                });
+            }
+
+            function drawPowerups() {
+                powerups.forEach(powerup => {
+                    // Pulsating animation
+                    const scale = 1 + Math.sin(frameCount * 0.1 + powerup.animOffset) * 0.1;
+                    ctx.save();
+                    ctx.translate(powerup.x + powerup.width / 2, powerup.y + powerup.height / 2);
+                    ctx.scale(scale, scale);
+                    ctx.fillStyle = powerup.color;
+                    ctx.beginPath();
+                    const points = 5;
+                    const outerRadius = powerup.width / 2;
+                    const innerRadius = outerRadius / 2;
+                    const x = 0;
+                    const y = 0;
+                    let rot = Math.PI / 2 * 3;
+                    let startX, startY;
+
+                    ctx.moveTo(x, y + outerRadius);
+                    for(let i = 0; i < points; i++){
+                        startX = x + Math.cos(rot) * outerRadius;
+                        startY = y + Math.sin(rot) * outerRadius;
+                        ctx.lineTo(startX, startY);
+                        rot += Math.PI / points;
+
+                        startX = x + Math.cos(rot) * innerRadius;
+                        startY = y + Math.sin(rot) * innerRadius;
+                        ctx.lineTo(startX, startY);
+                        rot += Math.PI / points;
+                    }
+                    ctx.lineTo(x, y + outerRadius);
+                    ctx.fill();
+                    ctx.closePath();
+                    ctx.restore();
+                });
+            }
+
+            function drawScore() {
+                ctx.fillStyle = '#2d3748';
+                ctx.font = '16px "Press Start 2P"';
+                
+                // Draw current score on the left
+                ctx.textAlign = 'left';
+                let currentMultiplier = (boostScoreMultiplier - 1) * 100;
+                let boostText = currentMultiplier > 0 ? ` (+${Math.round(currentMultiplier)}%)` : '';
+                ctx.fillText(`Score: ${Math.floor(score)}${boostText}`, 10, 25);
+                
+                // Draw high score on the right
+                ctx.textAlign = 'right';
+                ctx.fillText(`High Score: ${highScore}`, canvas.width - 10, 25);
+            }
+            
+            // Draw a semi-transparent overlay on visited grid cells
+            function drawCoverageGrid() {
+                ctx.save();
+                ctx.globalAlpha = 0.2; // Set transparency
+                ctx.fillStyle = '#f6e05e'; // Highlight color
+                for (let y = 0; y < gridHeight; y++) {
+                    for (let x = 0; x < gridWidth; x++) {
+                        if (coverageGrid[y][x] === 1) {
+                            ctx.fillRect(x * cellWidth, y * cellHeight, cellWidth, cellHeight);
+                        }
+                    }
+                }
+                ctx.restore();
+            }
+
+            // Draw a message from the Gemini API
+            function drawGeminiMessage() {
+                if (geminiMessage && geminiMessageTimer > 0) {
+                    ctx.save();
+                    const alpha = Math.min(1, geminiMessageTimer / 60);
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    ctx.fillRect(5, 40, canvas.width - 10, 30);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '12px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(geminiMessage, canvas.width / 2, 60);
+                    ctx.restore();
+                }
+            }
+
+            // New function to draw the golden boost message
+            function drawBoostMessage() {
+                if (boostMessage && boostMessageTimer > 0) {
+                    ctx.save();
+                    const alpha = Math.min(1, boostMessageTimer / 30);
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = '#FFD700'; // Golden color
+                    ctx.font = '24px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(boostMessage, canvas.width / 2, canvas.height / 2);
+                    ctx.restore();
+                }
+            }
+
+            // New function to draw the double jump countdown circle
+            function drawDoubleJumpIndicator() {
+                if (doubleJumpEnabled && doubleJumpTimer > 0) {
+                    const radius = 50; // Doubled the size
+                    const x = 75; // Shifted slightly right to make room
+                    const y = canvas.height / 2;
+                    const startAngle = -Math.PI / 2;
+                    const endAngle = startAngle + (doubleJumpTimer / doubleJumpDuration) * (Math.PI * 2);
+
+                    // Draw the background circle
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                    ctx.fill();
+
+                    // Draw the countdown arc
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.arc(x, y, radius, startAngle, endAngle, false);
+                    ctx.lineTo(x, y);
+                    ctx.closePath();
+                    ctx.fillStyle = 'rgba(66, 153, 225, 0.9)'; // Blue color
+                    ctx.fill();
+                    
+                    // Draw the text "Double Jump" in the center
+                    ctx.fillStyle = 'white';
+                    ctx.font = '12px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('DOUBLE', x, y - 8);
+                    ctx.fillText('JUMP', x, y + 8);
+                }
+            }
+            
+            function showBoostMessage(text) {
+                boostMessage = text;
+                boostMessageTimer = boostMessageDuration;
+            }
+
+            function createDoubleJumpParticles() {
+                const particleCount = 15;
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 5 + 2;
+                    particles.push({
+                        x: character.x + character.width / 2,
+                        y: character.y + character.height / 2,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        size: Math.random() * 4 + 2,
+                        alpha: 1,
+                        color: '#FFD700' // Golden color
+                    });
+                }
+            }
+
+
+            function update() {
+                if (gameOver) return;
+
+                // Move character
+                character.vy += gravity;
+                character.y += character.vy;
+                character.x += character.vx;
+                
+                // Add up/down movement to enemies
+                enemies.forEach(enemy => {
+                    enemy.y = ground.y - enemy.height + Math.sin(frameCount * 0.05 + enemy.animOffset) * 5;
+                });
+
+                // Move platforms, enemies, and power-ups
+                platforms.forEach(platform => platform.x -= gameSpeed);
+                enemies.forEach(enemy => enemy.x -= gameSpeed);
+                powerups.forEach(powerup => powerup.x -= gameSpeed);
+                treePositions.forEach(tree => tree.x -= gameSpeed * 0.5);
+
+                // Remove off-screen objects
+                platforms = platforms.filter(p => p.x + p.width > 0);
+                enemies = enemies.filter(e => e.x + e.width > 0);
+                powerups = powerups.filter(p => p.x + p.width > 0);
+                treePositions = treePositions.filter(t => t.x + t.size > 0);
+                
+                // New scoring logic based on Total Screen Coverage
+                const gridX = Math.floor((character.x + character.width / 2) / cellWidth);
+                const gridY = Math.floor((character.y + character.height / 2) / cellHeight);
+
+                if (gridX >= 0 && gridX < gridWidth && gridY >= 0 && gridY < gridHeight) {
+                    if (coverageGrid[gridY][gridX] === 0) {
+                        coverageGrid[gridY][gridX] = 1;
+                        totalCoveredCells++;
+                    }
+                }
+                
+                score = totalCoveredCells * boostScoreMultiplier;
+                
+                // Check for character on ground
+                let onAnyPlatform = false;
+                if (character.y + character.height >= ground.y) {
+                    onAnyPlatform = true;
+                    character.y = ground.y - character.height;
+                    character.vy = 0; // Stop vertical movement
+                    character.jumps = 0; // Reset jump count when on ground
+                }
+
+                // Check for collision with platforms
+                platforms.forEach(platform => {
+                    if (
+                        character.x < platform.x + platform.width &&
+                        character.x + character.width > platform.x &&
+                        character.y + character.height <= platform.y + character.vy &&
+                        character.y + character.height + character.vy >= platform.y
+                    ) {
+                        character.y = platform.y - character.height;
+                        character.onGround = true;
+                        character.isJumping = false;
+                        character.vy = 0;
+                        character.jumps = 0; // Reset jump count when on a platform
+                        onAnyPlatform = true;
+                    }
+                });
+                
+                character.onGround = onAnyPlatform;
+                if (!character.onGround) {
+                    if (character.y > canvas.height) {
+                        endGame('Game Over!', `You fell! Your final score is ${Math.floor(score)}.`);
+                    }
+                }
+
+                // Check for collision with enemies
+                enemies.forEach(enemy => {
+                    if (
+                        character.x < enemy.x + enemy.width &&
+                        character.x + character.width > enemy.x &&
+                        character.y < enemy.y + enemy.height &&
+                        character.y + character.height > enemy.y
+                    ) {
+                        endGame('Game Over!', `You were caught by the ${enemy.type}! Your final score is ${Math.floor(score)}.`);
+                    }
+                });
+
+                // Check for collision with power-ups
+                powerups = powerups.filter(powerup => {
+                    if (
+                        character.x < powerup.x + powerup.width &&
+                        character.x + character.width > powerup.x &&
+                        character.y < powerup.y + powerup.height &&
+                        character.y + character.height > powerup.y
+                    ) {
+                        if (powerup.type === 'Appraisal') {
+                            const boosts = [0.05, 0.10, 0.15];
+                            const boost = boosts[Math.floor(Math.random() * boosts.length)];
+                            boostScoreMultiplier = 1 + boost;
+                            appraisalBoostTimer = boostDurationFrames;
+                            showBoostMessage(`${Math.round(boost * 100)}% Boost!`);
+                            getGeminiReview('Appraisal');
+                        } else if (powerup.type === 'Promotion') {
+                            const boost = 0.35;
+                            boostScoreMultiplier = 1 + boost;
+                            promotionBoostTimer = boostDurationFrames;
+                            showBoostMessage(`${Math.round(boost * 100)}% Boost!`);
+                            getGeminiReview('Promotion');
+                            
+                            // New logic for double jump
+                            const currentTime = frameCount;
+                            if (currentTime - lastPromotionTime <= promotionStreakWindow) {
+                                promotionStreakCount++;
+                                if (promotionStreakCount >= 2) {
+                                    doubleJumpEnabled = true;
+                                    doubleJumpTimer = doubleJumpDuration;
+                                }
+                            } else {
+                                promotionStreakCount = 1;
+                            }
+                            lastPromotionTime = currentTime;
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+
+                // Keep character within horizontal bounds
+                if (character.x < 0) {
+                    character.x = 0;
+                }
+                if (character.x + character.width > canvas.width) {
+                    character.x = canvas.width - character.width;
+                }
+                
+                // Countdown for Gemini message
+                if (geminiMessageTimer > 0) {
+                    geminiMessageTimer--;
+                } else {
+                    geminiMessage = null;
+                }
+                
+                // Countdown for power-up boosts
+                if (appraisalBoostTimer > 0) {
+                    appraisalBoostTimer--;
+                } else if (promotionBoostTimer > 0) {
+                    promotionBoostTimer--;
+                } else {
+                    boostScoreMultiplier = 1; // Reset to default if no boost is active
+                }
+
+                // Countdown for double jump ability
+                if (doubleJumpEnabled) {
+                    doubleJumpTimer--;
+                    if (doubleJumpTimer <= 0) {
+                        doubleJumpEnabled = false;
+                    }
+                }
+                
+                // Countdown for boost message
+                if (boostMessageTimer > 0) {
+                    boostMessageTimer--;
+                } else {
+                    boostMessage = null;
+                }
+
+                // Particle animation for cheetah speed
+                if (character.vx !== 0 && character.onGround) {
+                    particles.push({
+                        x: character.isFacingRight ? character.x : character.x + character.width,
+                        y: character.y + character.height - 5,
+                        vx: character.isFacingRight ? -gameSpeed * 0.5 : gameSpeed * 0.5,
+                        vy: -Math.random() * 2,
+                        size: Math.random() * 5 + 2,
+                        alpha: 1,
+                        color: 'white' // Default particle color
+                    });
+                }
+                
+                // Update and remove particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    p.x += p.vx - gameSpeed;
+                    p.y += p.vy;
+                    p.alpha -= 0.02;
+                    if (p.alpha <= 0) {
+                        particles.splice(i, 1);
+                    }
+                }
+
+                frameCount++;
+            }
+
+            function drawParticles() {
+                particles.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${p.color === 'white' ? '255, 255, 255' : '255, 215, 0'}, ${p.alpha})`;
+                    ctx.fill();
+                    ctx.closePath();
+                });
+            }
+
+            function showMessage(title, text) {
+                messageTitle.textContent = title;
+                messageText.textContent = text;
+                messageBox.style.display = 'flex';
+                restartBtn.classList.remove('hidden');
+                startBtn.classList.add('hidden');
+            }
+
+            function hideMessage() {
+                messageBox.style.display = 'none';
+            }
+            
+            function endGame(title, text) {
+                gameOver = true;
+                gameStarted = false;
+                
+                // Check and update high score
+                if (Math.floor(score) > highScore) {
+                    highScore = Math.floor(score);
+                    localStorage.setItem('highScore', highScore);
+                    showMessage('New High Score!', `You set a new record with ${highScore} points!`);
+                } else {
+                    showMessage(title, text);
+                }
+            }
+
+            function resetGame() {
+                gameStarted = false;
+                gameOver = false;
+                score = 0;
+                lastPlatformX = 0;
+                character.x = 50;
+                character.y = ground.y - character.height;
+                character.vx = 0;
+                character.vy = 0;
+                character.jumps = 0;
+                character.isJumping = false;
+                platforms = [];
+                enemies = [];
+                powerups = [];
+                particles = [];
+                treePositions = [];
+                
+                // Reset new variables
+                boostScoreMultiplier = 1;
+                appraisalBoostTimer = 0;
+                promotionBoostTimer = 0;
+                boostMessage = null;
+                boostMessageTimer = 0;
+                promotionStreakCount = 0;
+                lastPromotionTime = 0;
+                doubleJumpEnabled = false;
+                doubleJumpTimer = 0;
+                
+                // Reset canvas dimensions and coverage grid
+                resizeHandler();
+                
+                hideMessage();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                drawCoverageGrid();
+                drawTrees();
+                drawGround();
+                drawPlatforms();
+                drawEnemies();
+                drawPowerups();
+                drawCharacter();
+                drawParticles();
+                drawScore();
+                drawGeminiMessage();
+                drawBoostMessage();
+                drawDoubleJumpIndicator(); // Draw the new indicator
+
+                if (gameStarted) {
+                    generateObjects();
+                    update();
+                    requestAnimationFrame(draw);
+                }
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (gameOver) return;
+                if (e.key === 'ArrowRight') {
+                    character.vx = character.speed;
+                    character.isFacingRight = true;
+                } else if (e.key === 'ArrowLeft') {
+                    character.vx = -character.speed;
+                    character.isFacingRight = false;
+                } else if (e.key === ' ' || e.key === 'ArrowUp') {
+                    if (character.onGround) {
+                        character.vy = character.jumpPower;
+                        character.onGround = false;
+                        character.isJumping = true;
+                        character.jumps = 1;
+                    } else if (doubleJumpEnabled && character.jumps < 2) {
+                        character.vy = character.jumpPower;
+                        character.jumps++;
+                        createDoubleJumpParticles();
+                    }
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                    character.vx = 0;
+                }
+            });
+
+            leftBtn.addEventListener('mousedown', () => {
+                if (gameOver) return;
+                character.vx = -character.speed;
+                character.isFacingRight = false;
+            });
+            leftBtn.addEventListener('mouseup', () => character.vx = 0);
+            leftBtn.addEventListener('touchstart', (e) => {
+                if (gameOver) return;
+                character.vx = -character.speed;
+                character.isFacingRight = false;
+                e.preventDefault();
+            });
+            leftBtn.addEventListener('touchend', () => character.vx = 0);
+
+            rightBtn.addEventListener('mousedown', () => {
+                if (gameOver) return;
+                character.vx = character.speed;
+                character.isFacingRight = true;
+            });
+            rightBtn.addEventListener('mouseup', () => character.vx = 0);
+            rightBtn.addEventListener('touchstart', (e) => {
+                if (gameOver) return;
+                character.vx = character.speed;
+                character.isFacingRight = true;
+                e.preventDefault();
+            });
+            rightBtn.addEventListener('touchend', () => character.vx = 0);
+
+            jumpBtn.addEventListener('mousedown', () => {
+                if (gameOver) return;
+                if (character.onGround) {
+                    character.vy = character.jumpPower;
+                    character.onGround = false;
+                    character.isJumping = true;
+                    character.jumps = 1;
+                } else if (doubleJumpEnabled && character.jumps < 2) {
+                    character.vy = character.jumpPower;
+                    character.jumps++;
+                    createDoubleJumpParticles();
+                }
+            });
+            jumpBtn.addEventListener('touchstart', (e) => {
+                if (gameOver) return;
+                if (character.onGround) {
+                    character.vy = character.jumpPower;
+                    character.onGround = false;
+                    character.isJumping = true;
+                    character.jumps = 1;
+                } else if (doubleJumpEnabled && character.jumps < 2) {
+                    character.vy = character.jumpPower;
+                    character.jumps++;
+                    createDoubleJumpParticles();
+                }
+                e.preventDefault();
+            });
+
+            difficultyButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    updateGameMode(btn.dataset.mode);
+                });
+            });
+
+            imageMenuBtn.addEventListener('click', () => {
+                imageMenu.classList.toggle('visible');
+            });
+            
+            document.addEventListener('click', (event) => {
+                if (!imageMenuBtn.contains(event.target) && !imageMenu.contains(event.target)) {
+                    imageMenu.classList.remove('visible');
+                }
+            });
+
+            startBtn.addEventListener('click', () => {
+                if (!gameStarted) {
+                    gameStarted = true;
+                    hideMessage();
+                    resetGame();
+                    draw();
+                }
+            });
+
+            restartBtn.addEventListener('click', () => {
+                resetGame();
+                gameStarted = true;
+                draw();
+            });
+            
+            restartBtnMessage.addEventListener('click', () => {
+                resetGame();
+                gameStarted = true;
+                draw();
+            });
+            
+            // Initial setup and resize handling
+            updateGameMode(gameMode);
+            window.addEventListener('resize', resizeHandler);
+            resizeHandler(); // Call once on load to set initial dimensions
+            draw();
+        }
+    </script>
+</body>
+</html>
